@@ -173,11 +173,7 @@ contexts:
     - match: '\b(custom)\b'
       comment: custom directive
       scope: keyword.control.custom.beancount
-      set:
-      - meta_scope: meta.directive.custom.beancount
-      - match: '(?={{string}})'
-        set: [metadata, string]
-      - include: illegal
+      set: [custom]
 
     - match: '(txn|[*])'
       comment: completed transaction
@@ -190,6 +186,42 @@ contexts:
         1: meta.flag.beancount keyword.other.beancount
       scope: keyword.control.transaction.flagged.beancount
       set: transaction
+
+  custom:
+    - meta_scope: meta.directive.custom.beancount
+    - match: '(?="fava-extension")'
+      set: [string, string, string]
+    - match: '(?="envelope")'
+      set: [metadata, custom-envelope, string]
+    - match: '(?={{string}})'
+      set: [metadata, string]
+    - include: illegal
+
+  custom-envelope:
+    - match: '\b*(?="currency")'
+      set: [string, string]
+    - match: '(?="start date")'
+      set: [string, string]
+    - match: '(?="include starting balance")'
+      set: [boolean, string]
+    - match: '(?="budget account")'
+      set: [regex, string]
+    - match: '(?="income account")'
+      set: [regex, string]
+    - match: '(?="income override")'
+      set: [amount, string]
+    - match: '(?="allocate")'
+      set: [amount, account, string]
+    - match: '(?="allocate fill")'
+      set: [regex, string]
+    - match: '(?="allow negative rollover")'
+      set: [boolean, string]
+    - match: '(?="negative rollover")'
+      set: [string, string]
+    - match: '(?="mapping")'
+      set: [account, regex, string]
+    - include: illegal
+      
 
   directive-end:
     - match: '(?=(^$|^\S))'
@@ -288,6 +320,13 @@ contexts:
       comment: double-quoted string
       captures:
         1: string.quoted.double.beancount
+      pop: true
+
+  boolean:
+    - match: '(TRUE|FALSE)'
+      comment: boolean argument
+      captures:
+        1: meta.boolean.beancount constant.language.boolean.beancount
       pop: true
 
   account:
@@ -416,3 +455,29 @@ contexts:
       - match: '\s*'
       - match: ''
         pop: true
+
+  # Regex highlighting is piggy-backing off python.
+  regex:
+    - match: '"'
+      scope: string.quoted.double.python
+      set: double-quoted-regexp-raw-u-string-body
+    - include: illegal
+
+  double-quoted-regexp-raw-u-string-body:
+    - meta_content_scope: meta.string.python string.quoted.double.python source.regexp.python
+    - match: '"'
+      scope: string.quoted.double.python
+      pop: true
+    - match: "\n"
+      pop: true
+    - match: ''
+      push: scope:source.regexp.python#base-literal
+      with_prototype:
+        - include: double-quoted-string-pop
+
+  double-quoted-string-pop:
+    - match: (?=")
+      pop: 1
+    - match: "\n"
+      set:
+        - include: illegal
