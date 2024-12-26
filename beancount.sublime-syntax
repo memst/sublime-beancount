@@ -1,6 +1,6 @@
 %YAML 1.2
 ---
-name: Beancount
+name: Beancount[envelope]
 file_extensions: [bean, beancount]
 scope: source.beancount
 variables:
